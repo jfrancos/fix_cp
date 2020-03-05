@@ -54,7 +54,9 @@ def ldap_search(uids, attrs):
         print(f"querying ldap server for {len(uid_chunk)} kerbs")
         filter = "(|(uid=" + ")(uid=".join(uid_chunk) + "))"
         result += ldap_db.search_s("dc=mit,dc=edu",
-                                   ldap.SCOPE_SUBTREE, filter, set(attrs + ['uid']))
+                                   ldap.SCOPE_SUBTREE,
+                                   filter,
+                                   set(attrs + ['uid']))
     result = [item[1] for item in result]
     result = [{key: " / ".join([item.decode() for item in value])
                for (key, value) in userdict.items()} for userdict in result]
@@ -76,7 +78,8 @@ def fix_size(row):
         new_value = round(new_value)
         new_value = f'{new_value:,}' + " MB"
         return new_value
-    return {**row, **{key: format(value) for (key, value) in row.items() if key in size_columns}}
+    return {**row, **{key: format(value)
+                      for (key, value) in row.items() if key in size_columns}}
 
 
 def remove_extraneous_columns(row):
@@ -89,7 +92,8 @@ def fix_time(row):
         if len(split_time) > 0 and "*" not in split_time[0]:
             split_time[0] = value[:10]
         return " ".join(split_time)
-    return {**row, **{key: truncate_time(value) for (key, value) in row.items() if key in time_columns}}
+    return {**row, **{key: truncate_time(value)
+                      for (key, value) in row.items() if key in time_columns}}
 
 
 def print_csv(reader):
@@ -106,8 +110,9 @@ def punctuate_issues(row):
     row['alertStates'] == critical_alert and punctuate('alertStates', 2)
     row['alertStates'] == warning_alert and punctuate('alertStates', 1)
     try:
-        last_completed = datetime.fromisoformat(row['lastCompletedBackupDate'])
-        ((now - last_completed).days > 7) and punctuate('lastCompletedBackupDate', 1)
+        most_recent = datetime.fromisoformat(row['lastCompletedBackupDate'])
+        (now - most_recent).days > 7 and punctuate(
+            'lastCompletedBackupDate', 1)
     except ValueError:
         punctuate('lastCompletedBackupDate', 1)
     if punct_dict != row:
@@ -129,8 +134,16 @@ with open(filename, 'r', newline='') as input_file:
         new_row = add_ldap(new_row, ldap_dict)
         new_list.append(new_row)
 
-new_list.sort(key=lambda row: ("".join([str(value) for value in row.values()]).count(
-    "*"), str(row['roomNumber'])), reverse=True)
+
+def sort_order(row):
+    values = [str(value) for value in row.values()]
+    joined_values = "".join(values)
+    num_asterisks = joined_values.count("*")
+    room_number = str(row['roomNumber'])
+    return (num_asterisks, room_number)
+
+
+new_list.sort(key=sort_order, reverse=True)
 
 with open('fixed.csv', 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=columns)
