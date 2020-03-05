@@ -99,7 +99,8 @@ def punctuate_issues(row):
 		((now - last_completed).days > 7)	and punctuate('lastCompletedBackupDate', 3)
 	except:
 		punctuate('lastCompletedBackupDate', 1)
-	return punct_dict
+	if punct_dict != row:
+		return punct_dict
 
 with open(filename, 'r', newline='') as input_file:
 	reader = list(csv.DictReader(input_file))
@@ -110,6 +111,8 @@ with open(filename, 'r', newline='') as input_file:
 		writer.writeheader()
 		for row in reader:
 			new_row = punctuate_issues(row)
+			# if not new_row:
+			# 	continue
 			new_row = remove_extraneous_columns(new_row)
 			new_row = fix_time(new_row)
 			new_row = fix_size(new_row)
