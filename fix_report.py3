@@ -1,10 +1,14 @@
 #!/usr/bin/python3
 
 import sys
+import os
 import csv
 import ldap
 from datetime import datetime, timezone
 from collections import ChainMap
+from dotenv import load_dotenv
+load_dotenv()
+
 
 columns = [ "roomNumber", "cn",
 		   "username",
@@ -33,6 +37,7 @@ size_columns = ["selectedBytes", "archiveBytes"]
 allowed_versions = ["7.0.3.55", "6.8.8.12"]
 critical_alert = "CriticalBackupAlert"
 warning_alert = "WarningBackupAlert"
+roomNumber_overrides = {key[4:]: value for (key, value) in dict(os.environ).items() if key.startswith('FCP_')}
 
 filename = sys.argv[1]
 now = datetime.now(timezone.utc)
@@ -57,7 +62,8 @@ def ldap_search(uids, attrs):
 
 def add_ldap(row, ldap_dict):
 	user = ldap_dict[row['username']]
-	return {'roomNumber': user.get('roomNumber'), 'cn': user.get('cn'), **row}
+	room_number = roomNumber_overrides.get(row['username']) or user.get('roomNumber')
+	return {'roomNumber': room_number, 'cn': user.get('cn'), **row}
 
 
 def fix_size(row):
