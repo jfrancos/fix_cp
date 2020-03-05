@@ -102,19 +102,23 @@ def punctuate_issues(row):
 	if punct_dict != row:
 		return punct_dict
 
+new_list = []
 with open(filename, 'r', newline='') as input_file:
 	reader = list(csv.DictReader(input_file))
 	users = list(set([row['username'] for row in reader]))
 	ldap_dict = ldap_search(users, ['cn', 'roomNumber'])
-	with open('fixed.csv', 'w', newline='') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames=columns)
-		writer.writeheader()
-		for row in reader:
-			new_row = punctuate_issues(row)
-			# if not new_row:
-			# 	continue
-			new_row = remove_extraneous_columns(new_row)
-			new_row = fix_time(new_row)
-			new_row = fix_size(new_row)
-			new_row = add_ldap(new_row, ldap_dict)
-			writer.writerow(new_row)
+	for row in reader:
+		new_row = punctuate_issues(row)
+		if not new_row:
+			continue
+		new_row = remove_extraneous_columns(new_row)
+		new_row = fix_time(new_row)
+		new_row = fix_size(new_row)
+		new_row = add_ldap(new_row, ldap_dict)
+		new_list.append(new_row)
+
+with open('fixed.csv', 'w', newline='') as csvfile:
+	writer = csv.DictWriter(csvfile, fieldnames=columns)
+	writer.writeheader()
+	for row in new_list:
+		writer.writerow(row)
