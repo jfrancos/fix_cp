@@ -6,7 +6,7 @@ import ldap
 from datetime import datetime, timezone
 from collections import ChainMap
 
-columns = ["cn", "roomNumber",
+columns = [ "roomNumber", "cn",
 		   "username",
 		   "deviceName",
 		   "deviceOsHostname",
@@ -96,7 +96,7 @@ def punctuate_issues(row):
 	row['alertStates'] == warning_alert		and punctuate('alertStates', 1)
 	try:
 		last_completed = datetime.fromisoformat(row['lastCompletedBackupDate'])
-		((now - last_completed).days > 7)	and punctuate('lastCompletedBackupDate', 3)
+		((now - last_completed).days > 7)	and punctuate('lastCompletedBackupDate', 1)
 	except:
 		punctuate('lastCompletedBackupDate', 1)
 	if punct_dict != row:
@@ -116,6 +116,8 @@ with open(filename, 'r', newline='') as input_file:
 		new_row = fix_size(new_row)
 		new_row = add_ldap(new_row, ldap_dict)
 		new_list.append(new_row)
+
+new_list.sort(key=lambda row: ("".join([str(value) for value in row.values()]).count("*"), str(row['roomNumber'])), reverse=True)
 
 with open('fixed.csv', 'w', newline='') as csvfile:
 	writer = csv.DictWriter(csvfile, fieldnames=columns)
