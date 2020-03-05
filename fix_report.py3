@@ -56,7 +56,7 @@ def ldap_search(uids, attrs):
 
 def add_ldap(row, ldap_dict):
     user = ldap_dict[row['username']]
-    return {**{'roomNumber': user.get('roomNumber'), 'cn': user.get('cn')}, **row}
+    return {'roomNumber': user.get('roomNumber'), 'cn': user.get('cn'), **row}
 
 
 def fix_size(row):
@@ -66,7 +66,7 @@ def fix_size(row):
         new_value = round(new_value)
         new_value = f'{new_value:,}' + " MB"
         return new_value
-    return {**row, **{key: format(value) for (key, value) in row.items() if key in size_columns}}
+    return {**row, **{key: format(value) for (key, value) in row.items() if key in size_columns}} # i think this can be consolidated???
 
 
 def remove_extraneous_columns(row):
@@ -94,5 +94,5 @@ with open(filename, 'r', newline='') as input_file:
             new_row = fix_time(new_row)
             new_row = fix_size(new_row)
             new_row = add_ldap(new_row, ldap_dict)
-            new_report.append(new_row)
+            # new_report.append(new_row)
             writer.writerow(new_row)
