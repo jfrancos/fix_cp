@@ -62,11 +62,11 @@ def add_ldap(row, ldap_dict):
 def fix_size(row):
     def format(value):
         new_value = 0 if value == "null" else value
-        new_value = int(new_value) / 1024 / 1024
+        new_value = int(new_value) / 2 ** 10 / 2 ** 10
         new_value = round(new_value)
         new_value = f'{new_value:,}' + " MB"
         return new_value
-    return {**row, **{key: format(value) for (key, value) in row.items() if key in size_columns}} # i think this can be consolidated???
+    return {**row, **{key: format(value) for (key, value) in row.items() if key in size_columns}}
 
 
 def remove_extraneous_columns(row):
