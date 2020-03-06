@@ -96,11 +96,6 @@ def fix_time(row):
                       for (key, value) in row.items() if key in time_columns}}
 
 
-def print_csv(reader):
-    for row in reader:
-        print(row)
-
-
 def punctuate_issues(row):
     punct_dict = {**row}
 
@@ -140,12 +135,12 @@ def sort_order(row):
     joined_values = "".join(values)
     num_asterisks = joined_values.count("*")
     room_number = str(row['roomNumber'])
-    return (num_asterisks, room_number)
+    return (-num_asterisks, room_number)
 
 
-new_list.sort(key=sort_order, reverse=True)
+new_list.sort(key=sort_order)
 
-with open('fixed.csv', 'w', newline='') as csvfile:
+with open(filename[:-4] + '-fixed.csv', 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=columns)
     writer.writeheader()
     for row in new_list:
