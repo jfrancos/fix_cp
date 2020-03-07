@@ -130,6 +130,13 @@ def add_percents(row):
         return row
 
 
+def abbreviate_alerts(row):
+    split = row['alertStates'].split()
+    if len(split) == 1:
+        return row
+    return {**row, 'alertStates': split[0][:-11] + " " + split[1]}
+
+
 new_list = []
 with open(filename, 'r', newline='') as input_file:
     line = input_file.readline()
@@ -147,6 +154,7 @@ with open(filename, 'r', newline='') as input_file:
         new_row = fix_size(new_row)
         new_row = add_ldap(new_row, ldap_dict)
         new_row = add_percents(new_row)
+        new_row = abbreviate_alerts(new_row)
         new_list.append(new_row)
 
 
