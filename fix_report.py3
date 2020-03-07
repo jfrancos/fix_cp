@@ -38,6 +38,8 @@ size_columns = ["selectedBytes", "archiveBytes"]
 allowed_versions = ["7.0.3.55", "6.8.8.12"]
 critical_alert = "CriticalBackupAlert"
 warning_alert = "WarningBackupAlert"
+
+# via a .env file with format 'FCP_jfrancos=33-555':
 roomNumber_overrides = {key[4:]: value for (key, value) in dict(
     os.environ).items() if key.startswith('FCP_')}
 
