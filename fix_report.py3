@@ -122,6 +122,14 @@ def punctuate_issues(row):
         return punct_dict
 
 
+def add_percents(row):
+    try:
+        float(row['complete'])
+        return {**row, 'complete': row['complete'] + " %"}
+    except ValueError:
+        return row
+
+
 new_list = []
 with open(filename, 'r', newline='') as input_file:
     line = input_file.readline()
@@ -138,6 +146,7 @@ with open(filename, 'r', newline='') as input_file:
         new_row = fix_time(new_row)
         new_row = fix_size(new_row)
         new_row = add_ldap(new_row, ldap_dict)
+        new_row = add_percents(new_row)
         new_list.append(new_row)
 
 
