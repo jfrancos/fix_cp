@@ -10,8 +10,13 @@ from collections import ChainMap
 from dotenv import load_dotenv
 load_dotenv()
 
+new_columns = {"backupCompletePercentage": "complete",
+               "lastConnectedDate": "lastConnected",
+               "lastCompletedBackupDate": "lastCompleted"
+               }
 
-columns = ["roomNumber", "cn",
+columns = ["roomNumber",
+           "cn",
            "username",
            "deviceName",
            "deviceOsHostname",
@@ -23,15 +28,15 @@ columns = ["roomNumber", "cn",
            "remoteAddress",
            "creationDate",
            "selectedBytes",
-           "backupCompletePercentage",
+           "complete",
            "archiveBytes",
-           "lastConnectedDate",
-           "lastCompletedBackupDate",
+           "lastConnected",
+           "lastCompleted",
            "lastActivity"]
 
 time_columns = ["creationDate",
-                "lastConnectedDate",
-                "lastCompletedBackupDate",
+                "lastConnected",
+                "lastCompleted",
                 "lastActivity"]
 
 size_columns = ["selectedBytes", "archiveBytes"]
@@ -108,18 +113,21 @@ def punctuate_issues(row):
     row['alertStates'] == critical_alert and punctuate('alertStates', 2)
     row['alertStates'] == warning_alert and punctuate('alertStates', 1)
     try:
-        most_recent = datetime.fromisoformat(row['lastCompletedBackupDate'])
+        most_recent = datetime.fromisoformat(row['lastCompleted'])
         (now - most_recent).days > 7 and punctuate(
-            'lastCompletedBackupDate', 1)
+            'lastCompleted', 1)
     except ValueError:
-        punctuate('lastCompletedBackupDate', 1)
+        punctuate('lastCompleted', 1)
     if punct_dict != row:
         return punct_dict
 
 
 new_list = []
 with open(filename, 'r', newline='') as input_file:
-    reader = list(csv.DictReader(input_file))
+    line = input_file.readline()
+    # fieldnames =   line.split(",")
+    fieldnames = [new_columns.get(name) or name for name in line.split(",")]
+    reader = list(csv.DictReader(input_file, fieldnames=fieldnames))
     users = list(set([row['username'] for row in reader]))
     ldap_dict = ldap_search(users, ['cn', 'roomNumber'])
     for row in reader:
