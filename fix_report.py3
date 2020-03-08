@@ -15,6 +15,14 @@ new_columns = {"backupCompletePercentage": "complete",
                "lastCompletedBackupDate": "lastCompleted"
                }
 
+windows_versions = {"5.1": "XP",
+                    "5.2": "XP",
+                    "6.0": "Vista",
+                    "6.1": "7",
+                    "6.2": "8",
+                    "6.3": "8.1",
+                    "10.0": "10"}
+
 columns = ["roomNumber",
            "cn",
            "username",
@@ -137,10 +145,20 @@ def abbreviate_alerts(row):
     return {**row, 'alertStates': split[0][:-11] + " " + split[1]}
 
 
+def translate_osver(row):
+    if row['os'] == 'win':
+        return {**row, 'osVersion':
+                'Windows ' + windows_versions[row['osVersion']]}
+    elif row['os'] == 'mac' and row['osVersion'].startswith('10.'):
+        return {**row, 'osVersion':
+                'macOS ' + row['osVersion']}
+    else:
+        return row
+
+
 new_list = []
 with open(filename, 'r', newline='') as input_file:
     line = input_file.readline()
-    # fieldnames =   line.split(",")
     fieldnames = [new_columns.get(name) or name for name in line.split(",")]
     reader = list(csv.DictReader(input_file, fieldnames=fieldnames))
     users = list(set([row['username'] for row in reader]))
@@ -149,13 +167,13 @@ with open(filename, 'r', newline='') as input_file:
         new_row = punctuate_issues(row)
         if not new_row:
             continue
+        new_row = translate_osver(new_row)
         new_row = remove_extraneous_columns(new_row)
         new_row = fix_time(new_row)
         new_row = fix_size(new_row)
         new_row = add_ldap(new_row, ldap_dict)
         new_row = add_percents(new_row)
         new_row = abbreviate_alerts(new_row)
-        # new_row = translate_winver(new_row)
         new_list.append(new_row)
 
 
