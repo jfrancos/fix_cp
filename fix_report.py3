@@ -155,6 +155,7 @@ with open(filename, 'r', newline='') as input_file:
         new_row = add_ldap(new_row, ldap_dict)
         new_row = add_percents(new_row)
         new_row = abbreviate_alerts(new_row)
+        # new_row = translate_winver(new_row)
         new_list.append(new_row)
 
 
