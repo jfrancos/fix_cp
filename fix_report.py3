@@ -5,6 +5,7 @@ import sys
 import os
 import csv
 import ldap
+from textwrap import wrap
 from datetime import datetime, timezone
 from collections import ChainMap
 from dotenv import load_dotenv
@@ -156,6 +157,14 @@ def translate_osver(row):
         return row
 
 
+def abbreviate_archive_names(row):
+    max_width = 20
+    new_names = {}
+    for name in ['deviceName', 'deviceOsHostname']:
+        new_names[name] = os.linesep.join(wrap(row[name], width=max_width))
+    return {**row, **new_names}
+
+
 new_list = []
 with open(filename, 'r', newline='') as input_file:
     line = input_file.readline()
@@ -174,6 +183,7 @@ with open(filename, 'r', newline='') as input_file:
         new_row = add_ldap(new_row, ldap_dict)
         new_row = add_percents(new_row)
         new_row = abbreviate_alerts(new_row)
+        new_row = abbreviate_archive_names(new_row)
         new_list.append(new_row)
 
 
