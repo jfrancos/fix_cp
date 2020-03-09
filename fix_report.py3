@@ -74,7 +74,7 @@ def ldap_search(uids, attrs):
                                    filter,
                                    set(attrs + ['uid']))
     result = [item[1] for item in result]
-    result = [{key: " / ".join([item.decode() for item in value])
+    result = [{key: os.linesep.join([item.decode() for item in value])
                for (key, value) in userdict.items()} for userdict in result]
     result = [{item['uid']:item} for item in result]
     return dict(ChainMap(*result))
