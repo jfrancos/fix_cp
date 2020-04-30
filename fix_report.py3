@@ -11,42 +11,51 @@ from collections import ChainMap
 from dotenv import load_dotenv
 load_dotenv()
 
-new_columns = {"backupCompletePercentage": "complete",
-               "lastConnectedDate": "lastConnected",
-               "lastCompletedBackupDate": "lastCompleted"
-               }
+new_columns = {
+    "backupCompletePercentage": "complete",
+    "lastConnectedDate": "lastConnected",
+    "lastCompletedBackupDate": "lastCompleted"
+}
 
-windows_versions = {"5.1": "XP",
-                    "5.2": "XP",
-                    "6.0": "Vista",
-                    "6.1": "7",
-                    "6.2": "8",
-                    "6.3": "8.1",
-                    "10.0": "10"}
+windows_versions = {
+    "5.1": "XP",
+    "5.2": "XP",
+    "6.0": "Vista",
+    "6.1": "7",
+    "6.2": "8",
+    "6.3": "8.1",
+    "10.0": "10"
+}
 
-columns = ["roomNumber",
-           "cn",
-           "username",
-           "version",
-           "lastCompleted",
-           "alertStates",
-           "lastConnected",
-           "complete",
-           "osVersion",
-           "creationDate",
-           "lastActivity",
-           "deviceName",
-           "deviceOsHostname",
-           "address",
-           "remoteAddress",
-           "selectedBytes",
-           "archiveBytes"]
+columns = [
+    # "roomNumber",
+    "title",
+    "phone",
+    "cn",
+    "username",
+    "version",
+    "lastCompleted",
+    "alertStates",
+    "lastConnected",
+    "complete",
+    "osVersion",
+    "creationDate",
+    "lastActivity",
+    "deviceName",
+    "deviceOsHostname",
+    "address",
+    "remoteAddress",
+    "selectedBytes",
+    "archiveBytes"
+]
 
 
-time_columns = ["creationDate",
-                "lastConnected",
-                "lastCompleted",
-                "lastActivity"]
+time_columns = [
+    "creationDate",
+    "lastConnected",
+    "lastCompleted",
+    "lastActivity"
+]
 
 size_columns = ["selectedBytes", "archiveBytes"]
 allowed_versions = ["7.0.3.55", "6.8.8.12"]
@@ -70,10 +79,12 @@ def ldap_search(uids, attrs):
     for uid_chunk in chunked_uids:
         print(f"querying ldap server for {len(uid_chunk)} kerbs")
         filter = "(|(uid=" + ")(uid=".join(uid_chunk) + "))"
-        result += ldap_db.search_s("dc=mit,dc=edu",
-                                   ldap.SCOPE_SUBTREE,
-                                   filter,
-                                   set(attrs + ['uid']))
+        result += ldap_db.search_s(
+            "dc=mit,dc=edu",
+            ldap.SCOPE_SUBTREE,
+            filter,
+            set(attrs + ['uid'])
+        )
     result = [item[1] for item in result]
     result = [{key: os.linesep.join([item.decode() for item in value])
                for (key, value) in userdict.items()} for userdict in result]
@@ -83,9 +94,13 @@ def ldap_search(uids, attrs):
 
 def add_ldap(row, ldap_dict):
     user = ldap_dict[row['username']]
-    room_number = roomNumber_overrides.get(
-        row['username']) or user.get('roomNumber')
-    return {'roomNumber': room_number, 'cn': user.get('cn'), **row}
+    phone = user.get('telephoneNumber')
+    cn = user.get('cn')
+    title = user.get('title')
+    return {'title': title, 'phone': phone, 'cn': cn, **row}
+    # room_number = roomNumber_overrides.get(
+    #     row['username']) or user.get('roomNumber')
+    # return {'roomNumber': room_number, 'cn': user.get('cn'), **row}
 
 
 def fix_size(row):
@@ -171,7 +186,12 @@ with open(filename, 'r', newline='') as input_file:
     fieldnames = [new_columns.get(name) or name for name in line.split(",")]
     reader = list(csv.DictReader(input_file, fieldnames=fieldnames))
     users = list(set([row['username'] for row in reader]))
-    ldap_dict = ldap_search(users, ['cn', 'roomNumber'])
+    ldap_dict = ldap_search(users, [
+        'cn',
+        # 'roomNumber',
+        'telephoneNumber',
+        'title'
+    ])
     for row in reader:
         new_row = punctuate_issues(row)
         if not new_row:
@@ -191,8 +211,9 @@ def sort_order(row):
     values = [str(value) for value in row.values()]
     joined_values = "".join(values)
     num_asterisks = joined_values.count("*")
-    room_number = str(row['roomNumber'])
-    return (-num_asterisks, room_number)
+    return (-num_asterisks)
+    # room_number = str(row['roomNumber'])
+    # return (-num_asterisks, room_number)
 
 
 new_list.sort(key=sort_order)
