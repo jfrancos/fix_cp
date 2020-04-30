@@ -93,10 +93,12 @@ def ldap_search(uids, attrs):
 
 
 def add_ldap(row, ldap_dict):
+    max_width = 27
     user = ldap_dict[row['username']]
     phone = user.get('telephoneNumber')
     cn = user.get('cn')
     title = user.get('title')
+    title = os.linesep.join(wrap(title, width=max_width))
     return {'title': title, 'phone': phone, 'cn': cn, **row}
     # room_number = roomNumber_overrides.get(
     #     row['username']) or user.get('roomNumber')
