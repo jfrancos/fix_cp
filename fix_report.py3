@@ -9,6 +9,8 @@ from textwrap import wrap
 from datetime import datetime, timezone
 from collections import ChainMap
 from dotenv import load_dotenv
+from libnmap.process import NmapProcess
+from libnmap.parser import NmapParser, NmapParserException
 load_dotenv()
 
 new_columns = {
@@ -29,6 +31,7 @@ windows_versions = {
 
 columns = [
     # "roomNumber",
+    "network",
     "title",
     "phone",
     "cn",
@@ -77,7 +80,7 @@ def ldap_search(uids, attrs):
                     for i in range(0, len(uids), ldap_limit)]
     result = []
     for uid_chunk in chunked_uids:
-        print(f"querying ldap server for {len(uid_chunk)} kerbs")
+        print(f"Querying ldap server for {len(uid_chunk)} kerberos ids")
         filter = "(|(uid=" + ")(uid=".join(uid_chunk) + "))"
         result += ldap_db.search_s(
             "dc=mit,dc=edu",
@@ -182,12 +185,44 @@ def abbreviate_archive_names(row):
     return {**row, **new_names}
 
 
+def add_network(row, rdp_list):
+    address = row['remoteAddress']
+    network = ''
+    if address.startswith('18.28') or address.startswith('18.30'):
+        network = 'VPN'
+    elif address.startswith('18.') or address.startswith('10.'):
+        network = 'MITnet'
+        if (address in rdp_list):
+            network += ' / RDP'
+    else:
+        network = 'External'
+    return {**row, 'network': network}
+
+
+def get_rdp(reader):
+    ips = [row['remoteAddress'].split(':')[0] for row in reader]
+    rdp_candidates = [
+        ip for ip in ips if     # is on MITnet
+        (ip.startswith('10.') or ip.startswith('18.'))
+        and not                 # and not on VPN
+        (ip.startswith('18.28') or ip.startswith('18.30'))
+    ]
+    print(f"Nmap scanning {len(rdp_candidates)} ips")
+    nmap_options = '-np 3389 -Pn -T5'
+    nm = NmapProcess(rdp_candidates, nmap_options)
+    nm.run()
+    report = NmapParser.parse(nm.stdout)
+    return [host.address for host in report.hosts if host.get_open_ports()]
+
+
 new_list = []
 with open(filename, 'r', newline='') as input_file:
     line = input_file.readline()
     fieldnames = [new_columns.get(name) or name for name in line.split(",")]
     reader = list(csv.DictReader(input_file, fieldnames=fieldnames))
     users = list(set([row['username'] for row in reader]))
+    rdp_list = get_rdp(reader)
+
     ldap_dict = ldap_search(users, [
         'cn',
         # 'roomNumber',
@@ -206,6 +241,7 @@ with open(filename, 'r', newline='') as input_file:
         new_row = add_percents(new_row)
         new_row = abbreviate_alerts(new_row)
         new_row = abbreviate_archive_names(new_row)
+        new_row = add_network(new_row, rdp_list)
         new_list.append(new_row)
 
 
