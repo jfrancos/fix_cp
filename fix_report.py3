@@ -5,6 +5,7 @@ import sys
 import os
 import csv
 import ldap
+import argparse
 from textwrap import wrap
 from datetime import datetime, timezone
 from collections import ChainMap
@@ -12,6 +13,14 @@ from dotenv import load_dotenv
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser, NmapParserException
 load_dotenv()
+
+parser = argparse.ArgumentParser(description='Process CrashPlan report CSV')
+parser.add_argument('filename', type=str, help='CrashPlan CSV to be processed')
+parser.add_argument('--full', action='store_true')
+
+args = parser.parse_args()
+filename = args.filename
+full = args.full
 
 new_columns = {
     "backupCompletePercentage": "complete",
@@ -64,13 +73,11 @@ size_columns = ["selectedBytes", "archiveBytes"]
 allowed_versions = ["7.0.3.55", "6.8.8.12"]
 critical_alert = "CriticalBackupAlert"
 warning_alert = "WarningBackupAlert"
+now = datetime.now(timezone.utc)
 
 # via a .env file with format 'FCP_jfrancos=33-555':
 roomNumber_overrides = {key[4:]: value for (key, value) in dict(
     os.environ).items() if key.startswith('FCP_')}
-
-filename = sys.argv[1]
-now = datetime.now(timezone.utc)
 
 
 def ldap_search(uids, attrs):
@@ -134,22 +141,22 @@ def fix_time(row):
                       for (key, value) in row.items() if key in time_columns}}
 
 
-def punctuate_issues(row):
-    punct_dict = {**row}
+def flag_issues(row):
+    flag_dict = {**row}
 
-    def punctuate(key, severity):
-        punct_dict[key] = row[key] + " " + "*" * severity
-    row['version'] not in allowed_versions and punctuate('version', 2)
-    row['alertStates'] == critical_alert and punctuate('alertStates', 2)
-    row['alertStates'] == warning_alert and punctuate('alertStates', 1)
+    def flag(key, severity):
+        flag_dict[key] = row[key] + " " + "*" * severity
+    row['version'] not in allowed_versions and flag('version', 2)
+    row['alertStates'] == critical_alert and flag('alertStates', 2)
+    row['alertStates'] == warning_alert and flag('alertStates', 1)
     try:
         most_recent = datetime.fromisoformat(row['lastCompleted'])
-        (now - most_recent).days > 7 and punctuate(
+        (now - most_recent).days > 7 and flag(
             'lastCompleted', 1)
     except ValueError:
-        punctuate('lastCompleted', 1)
-    if punct_dict != row:
-        return punct_dict
+        flag('lastCompleted', 1)
+    if flag_dict != row or full:
+        return flag_dict
 
 
 def add_percents(row):
@@ -231,7 +238,7 @@ with open(filename, 'r', newline='') as input_file:
         'title'
     ])
     for row in reader:
-        new_row = punctuate_issues(row)
+        new_row = flag_issues(row)
         if not new_row:
             continue
         new_row = translate_osver(new_row)
