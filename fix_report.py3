@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 
 
-import sys
+# import sys
 import os
 import csv
 import ldap
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from collections import ChainMap
 from dotenv import load_dotenv
 from libnmap.process import NmapProcess
-from libnmap.parser import NmapParser, NmapParserException
+# from libnmap.parser import NmapParser, NmapParserException
 load_dotenv()
 
 parser = argparse.ArgumentParser(description='Process CrashPlan report CSV')
