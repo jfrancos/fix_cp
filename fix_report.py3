@@ -214,10 +214,12 @@ def add_network(row, rdp_list):
 
 
 def add_notes(row):
-    uidField = "deviceUid"
-    uid = int(row[uidField])
-    if uid in config[uidField]:
-        return {**row, 'notes': config[uidField][uid]}
+    for key in [key for key in config.keys() if row.get(key)]:
+        uid = row[key]
+        if uid in config[key]:
+            return {**row, 'notes': config[key][uid]}
+        elif int(uid) in config[key]:
+            return {**row, 'notes': config[key][int(uid)]}
     if row['network'] == 'MITnet' and row['username'] not in config['on_campus']:
         return {**row, 'notes': "user not on campus"}
     else:
