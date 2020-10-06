@@ -6,13 +6,15 @@ import os
 import csv
 import ldap
 import argparse
+import yaml
 from textwrap import wrap
 from datetime import datetime, timezone
 from collections import ChainMap
 from dotenv import load_dotenv
 from libnmap.process import NmapProcess
-# from libnmap.parser import NmapParser, NmapParserException
+from libnmap.parser import NmapParser, NmapParserException
 load_dotenv()
+config = yaml.safe_load(open("config.yaml"))
 
 parser = argparse.ArgumentParser(description='Process CrashPlan report CSV')
 parser.add_argument('filename', type=str, help='CrashPlan CSV to be processed')
@@ -21,6 +23,8 @@ parser.add_argument('--full', action='store_true')
 args = parser.parse_args()
 filename = args.filename
 full = args.full
+
+print(config)
 
 new_columns = {
     "backupCompletePercentage": "complete",
@@ -42,6 +46,7 @@ columns = [
     # "roomNumber",
     "network",
     "title",
+    "notes",
     "phone",
     "cn",
     "username",
@@ -58,7 +63,8 @@ columns = [
     "address",
     "remoteAddress",
     "selectedBytes",
-    "archiveBytes"
+    "archiveBytes",
+    "deviceUid"
 ]
 
 
@@ -207,6 +213,17 @@ def add_network(row, rdp_list):
     return {**row, 'network': network}
 
 
+def add_notes(row):
+    uidField = "deviceUid"
+    uid = int(row[uidField])
+    if uid in config[uidField]:
+        return {**row, 'notes': config[uidField][uid]}
+    if row['network'] == 'MITnet' and row['username'] not in config['on_campus']:
+        return {**row, 'notes': "user not on campus"}
+    else:
+        return row
+
+
 def get_rdp(reader):
     ips = [row['remoteAddress'].split(':')[0] for row in reader]
     rdp_candidates = [
@@ -242,7 +259,6 @@ with open(filename, 'r', newline='') as input_file:
         if not new_row:
             continue
         new_row = translate_osver(new_row)
-        new_row = remove_extraneous_columns(new_row)
         new_row = fix_time(new_row)
         new_row = fix_size(new_row)
         new_row = add_ldap(new_row, ldap_dict)
@@ -250,6 +266,8 @@ with open(filename, 'r', newline='') as input_file:
         new_row = abbreviate_alerts(new_row)
         new_row = abbreviate_archive_names(new_row)
         new_row = add_network(new_row, rdp_list)
+        new_row = add_notes(new_row)
+        new_row = remove_extraneous_columns(new_row)
         new_list.append(new_row)
 
 

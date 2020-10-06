@@ -7,4 +7,4 @@ RUN echo 'alias time="time -p "' >> /root/.zshrc
 ENTRYPOINT cd /docker_* && git --no-pager diff && zsh
 
 RUN apt-get update && apt-get -y install libldap2-dev libsasl2-dev nmap && apt-get clean
-RUN pip3 install python-ldap python-dotenv python-libnmap
+RUN pip3 install python-ldap python-dotenv python-libnmap pyyaml
