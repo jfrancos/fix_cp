@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser, NmapParserException
 load_dotenv()
-config = yaml.safe_load(open("config.yaml"))
+config = yaml.safe_load(open("notes.yaml"))
 
 parser = argparse.ArgumentParser(description='Process CrashPlan report CSV')
 parser.add_argument('filename', type=str, help='CrashPlan CSV to be processed')
@@ -24,7 +24,7 @@ args = parser.parse_args()
 filename = args.filename
 full = args.full
 
-print(config)
+# print(config)
 
 new_columns = {
     "backupCompletePercentage": "complete",
@@ -218,7 +218,7 @@ def add_notes(row):
         uid = row[key]
         if uid in config[key]:
             return {**row, 'notes': config[key][uid]}
-        elif int(uid) in config[key]:
+        elif uid.isdigit() and int(uid) in config[key]:
             return {**row, 'notes': config[key][int(uid)]}
     if row['network'] == 'MITnet' and row['username'] not in config['on_campus']:
         return {**row, 'notes': "user not on campus"}
